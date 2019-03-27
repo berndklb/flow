@@ -210,6 +210,229 @@ public class Binder<BEAN> implements Serializable {
          * @return the setter
          */
         Setter<BEAN, TARGET> getSetter();
+        
+        /**
+         * Sets the field to be required. This means two things:
+         * <ol>
+         * <li>the required indicator is visible</li>
+         * <li>the field value is validated for not being empty*</li>
+         * </ol>
+         * For localizing the error message, use
+         * {@link #asRequired(ErrorMessageProvider)}.
+         * <p>
+         * *Value not being the equal to what {@link HasValue#getEmptyValue()}
+         * returns.
+         *
+         * @see #asRequired(ErrorMessageProvider)
+         * @see HasValue#setRequiredIndicatorVisible(boolean)
+         * @see HasValue#isEmpty()
+         * @param errorMessage
+         *            the error message to show for the invalid value
+         * @return this binding, for chaining
+         */
+        default Binding<BEAN, TARGET> setRequired(String errorMessage) {
+            return setRequired(context -> errorMessage);
+        }
+
+        /**
+         * Sets the field to be required. This means two things:
+         * <ol>
+         * <li>the required indicator will be displayed for this field</li>
+         * <li>the field value is validated for not being empty, i.e. that the
+         * field's value is not equal to what {@link HasValue#getEmptyValue()}
+         * returns</li>
+         * </ol>
+         * <p>
+         * For setting an error message, use {@link #asRequired(String)}.
+         * <p>
+         * For localizing the error message, use
+         * {@link #asRequired(ErrorMessageProvider)}.
+         *
+         * @see #asRequired(String)
+         * @see #asRequired(ErrorMessageProvider)
+         * @see HasValue#setRequiredIndicatorVisible(boolean)
+         * @see HasValue#isEmpty()
+         * @return this binding, for chaining
+         *
+         */
+        default Binding<BEAN, TARGET> setRequired() {
+            return setRequired(context -> "");
+        }
+
+        /**
+         * Sets the field to be required. This means two things:
+         * <ol>
+         * <li>the required indicator is visible</li>
+         * <li>the field value is validated for not being empty*</li>
+         * </ol>
+         * *Value not being the equal to what {@link HasValue#getEmptyValue()}
+         * returns.
+         *
+         * @see HasValue#setRequiredIndicatorVisible(boolean)
+         * @see HasValue#isEmpty()
+         * @param errorMessageProvider
+         *            the provider for localized validation error message
+         * @return this binding, for chaining
+         */
+        Binding<BEAN, TARGET> setRequired(
+                ErrorMessageProvider errorMessageProvider);
+
+        /**
+         * Sets the field to be required and delegates the required check to a
+         * custom validator. This means two things:
+         * <ol>
+         * <li>the required indicator will be displayed for this field</li>
+         * <li>the field value is validated by customRequiredValidator</li>
+         * </ol>
+         *
+         * @see HasValue#setRequiredIndicatorVisible(boolean)
+         * @param customRequiredValidator
+         *            validator responsible for the required check
+         * @return this binding, for chaining
+         */
+        public Binding<BEAN, TARGET> setRequired(
+                Validator<TARGET> customRequiredValidator);
+        
+        /**
+         * Adds a validator to this binding. Validators are applied, in
+         * registration order, when the field value is written to the backing
+         * property. If any validator returns a failure, the property value is
+         * not updated.
+         *
+         * @see #withValidator(SerializablePredicate, String)
+         * @see #withValidator(SerializablePredicate, ErrorMessageProvider)
+         *
+         * @param validator
+         *            the validator to add, not null
+         * @return this binding, for chaining
+         * @throws IllegalStateException
+         *             if {@code bind} has already been called
+         */
+        Binding<BEAN, TARGET> addValidator(
+                Validator<? super TARGET> validator);
+
+        /**
+         * A convenience method to add a validator to this binding using the
+         * {@link Validator#from(SerializablePredicate, String)} factory method.
+         * <p>
+         * Validators are applied, in registration order, when the field value
+         * is written to the backing property. If any validator returns a
+         * failure, the property value is not updated.
+         *
+         * @see #withValidator(Validator)
+         * @see #withValidator(SerializablePredicate, String, ErrorLevel)
+         * @see #withValidator(SerializablePredicate, ErrorMessageProvider)
+         * @see Validator#from(SerializablePredicate, String)
+         *
+         * @param predicate
+         *            the predicate performing validation, not null
+         * @param message
+         *            the error message to report in case validation failure
+         * @return this binding, for chaining
+         * @throws IllegalStateException
+         *             if {@code bind} has already been called
+         */
+        default Binding<BEAN, TARGET> addValidator(
+                SerializablePredicate<? super TARGET> predicate,
+                String message) {
+            return addValidator(Validator.from(predicate, message));
+        }
+
+        /**
+         * A convenience method to add a validator to this binding using the
+         * {@link Validator#from(SerializablePredicate, String, ErrorLevel)}
+         * factory method.
+         * <p>
+         * Validators are applied, in registration order, when the field value
+         * is written to the backing property. If any validator returns a
+         * failure, the property value is not updated.
+         *
+         * @see #withValidator(Validator)
+         * @see #withValidator(SerializablePredicate, String)
+         * @see #withValidator(SerializablePredicate, ErrorMessageProvider,
+         *      ErrorLevel)
+         * @see Validator#from(SerializablePredicate, String)
+         *
+         * @param predicate
+         *            the predicate performing validation, not null
+         * @param message
+         *            the error message to report in case validation failure
+         * @param errorLevel
+         *            the error level for failures from this validator, not null
+         * @return this binding, for chaining
+         * @throws IllegalStateException
+         *             if {@code bind} has already been called
+         */
+        default Binding<BEAN, TARGET> addValidator(
+                SerializablePredicate<? super TARGET> predicate, String message,
+                ErrorLevel errorLevel) {
+            return addValidator(
+                    Validator.from(predicate, message, errorLevel));
+        }
+
+        /**
+         * A convenience method to add a validator to this binding using the
+         * {@link Validator#from(SerializablePredicate, ErrorMessageProvider)}
+         * factory method.
+         * <p>
+         * Validators are applied, in registration order, when the field value
+         * is written to the backing property. If any validator returns a
+         * failure, the property value is not updated.
+         *
+         * @see #withValidator(Validator)
+         * @see #withValidator(SerializablePredicate, String)
+         * @see #withValidator(SerializablePredicate, ErrorMessageProvider,
+         *      ErrorLevel)
+         * @see Validator#from(SerializablePredicate, ErrorMessageProvider)
+         *
+         * @param predicate
+         *            the predicate performing validation, not null
+         * @param errorMessageProvider
+         *            the provider to generate error messages, not null
+         * @return this binding, for chaining
+         * @throws IllegalStateException
+         *             if {@code bind} has already been called
+         */
+        default Binding<BEAN, TARGET> addValidator(
+                SerializablePredicate<? super TARGET> predicate,
+                ErrorMessageProvider errorMessageProvider) {
+            return addValidator(
+                    Validator.from(predicate, errorMessageProvider));
+        }
+
+        /**
+         * A convenience method to add a validator to this binding using the
+         * {@link Validator#from(SerializablePredicate, ErrorMessageProvider, ErrorLevel)}
+         * factory method.
+         * <p>
+         * Validators are applied, in registration order, when the field value
+         * is written to the backing property. If any validator returns a
+         * failure, the property value is not updated.
+         *
+         * @see #withValidator(Validator)
+         * @see #withValidator(SerializablePredicate, String, ErrorLevel)
+         * @see #withValidator(SerializablePredicate, ErrorMessageProvider)
+         * @see Validator#from(SerializablePredicate, ErrorMessageProvider,
+         *      ErrorLevel)
+         *
+         * @param predicate
+         *            the predicate performing validation, not null
+         * @param errorMessageProvider
+         *            the provider to generate error messages, not null
+         * @param errorLevel
+         *            the error level for failures from this validator, not null
+         * @return this binding, for chaining
+         * @throws IllegalStateException
+         *             if {@code bind} has already been called
+         */
+        default Binding<BEAN, TARGET> addValidator(
+                SerializablePredicate<? super TARGET> predicate,
+                ErrorMessageProvider errorMessageProvider,
+                ErrorLevel errorLevel) {
+            return addValidator(Validator.from(predicate, errorMessageProvider,
+                    errorLevel));
+        }
+
     }
 
     /**
@@ -708,6 +931,8 @@ public class Binder<BEAN> implements Serializable {
          */
         public BindingBuilder<BEAN, TARGET> asRequired(
                 Validator<TARGET> customRequiredValidator);
+        
+        public BindingBuilder<BEAN, TARGET> unbind();
     }
 
     /**
@@ -955,6 +1180,12 @@ public class Binder<BEAN> implements Serializable {
         private static final Logger getLogger() {
             return LoggerFactory.getLogger(Binder.class.getName());
         }
+
+        @Override
+        public BindingBuilder<BEAN, TARGET> unbind() {
+            this.bound = false;
+            return this;
+        }
     }
 
     /**
@@ -972,6 +1203,7 @@ public class Binder<BEAN> implements Serializable {
             implements Binding<BEAN, TARGET> {
 
         private Binder<BEAN> binder;
+        private BindingBuilderImpl<BEAN, FIELDVALUE, TARGET> builder;
 
         private HasValue<?, FIELDVALUE> field;
         private final BindingValidationStatusHandler statusHandler;
@@ -993,6 +1225,7 @@ public class Binder<BEAN> implements Serializable {
         public BindingImpl(BindingBuilderImpl<BEAN, FIELDVALUE, TARGET> builder,
                 ValueProvider<BEAN, TARGET> getter,
                 Setter<BEAN, TARGET> setter) {
+            this.builder = builder;
             binder = builder.getBinder();
             field = builder.field;
             statusHandler = builder.statusHandler;
@@ -1057,6 +1290,9 @@ public class Binder<BEAN> implements Serializable {
             if(binder != null) {
                 binder.removeBindingInternal(this);
                 binder = null;
+            }
+            if(builder != null) {
+                builder.unbind();
             }
 
             field = null;
@@ -1226,6 +1462,39 @@ public class Binder<BEAN> implements Serializable {
         @Override
         public Setter<BEAN, TARGET> getSetter() {
             return setter;
+        }
+
+        @Override
+        public Binding<BEAN, TARGET> setRequired(
+                ErrorMessageProvider errorMessageProvider) {
+            ValueProvider<BEAN, TARGET> getter = getGetter();
+            Setter<BEAN, TARGET> setter = getSetter();
+            this.unbind();
+            this.builder.asRequired(errorMessageProvider);
+            this.builder.bind(getter, setter);
+            return this;
+        }
+
+        @Override
+        public Binding<BEAN, TARGET> setRequired(
+                Validator<TARGET> customRequiredValidator) {
+            ValueProvider<BEAN, TARGET> getter = getGetter();
+            Setter<BEAN, TARGET> setter = getSetter();
+            this.unbind();
+            this.builder.asRequired(customRequiredValidator);
+            this.builder.bind(getter, setter);
+            return this;
+        }
+
+        @Override
+        public Binding<BEAN, TARGET> addValidator(
+                Validator<? super TARGET> validator) {
+            ValueProvider<BEAN, TARGET> getter = getGetter();
+            Setter<BEAN, TARGET> setter = getSetter();
+            this.unbind();
+            this.builder.withValidator(validator);
+            this.builder.bind(getter, setter);
+            return this;
         }
     }
 
