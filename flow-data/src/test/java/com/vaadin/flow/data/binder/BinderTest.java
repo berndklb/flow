@@ -1308,4 +1308,27 @@ public class BinderTest extends BinderTestBase<Binder<Person>, Person> {
 
         nameField.setValue("Foo");
     }
+    
+    @Test
+    public void change_binding_after_bind_set_required() {
+        Binding<Person, String> nameBinding = binder.bind(nameField, Person::getFirstName, Person::setFirstName);
+        
+        assertTrue(binder.validate().isOk());
+        
+        nameBinding.setRequired();
+        
+        assertFalse(binder.validate().isOk());
+    }
+    
+    @Test
+    public void change_binding_after_bind_add_validator() {
+        Binding<Person, String> nameBinding = binder.bind(nameField, Person::getFirstName, Person::setFirstName);
+        item.setFirstName("Foo Bar");
+        binder.setBean(item);
+        assertTrue(binder.validate().isOk());
+        
+        nameBinding.addValidator(new StringLengthValidator("to long", 0, 3));
+        assertFalse(binder.validate().isOk());
+    }
+    
 }

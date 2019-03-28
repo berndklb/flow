@@ -40,9 +40,12 @@ import org.junit.Test;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.BeanBinderTest.RequiredConstraints.SubConstraint;
 import com.vaadin.flow.data.binder.BeanBinderTest.RequiredConstraints.SubSubConstraint;
+import com.vaadin.flow.data.binder.Binder.Binding;
 import com.vaadin.flow.data.binder.testcomponents.TestTextField;
 import com.vaadin.flow.data.converter.StringToIntegerConverter;
+import com.vaadin.flow.data.validator.StringLengthValidator;
 import com.vaadin.flow.tests.data.bean.BeanToValidate;
+import com.vaadin.flow.tests.data.bean.Person;
 
 public class BeanBinderTest
         extends BinderTestBase<Binder<BeanToValidate>, BeanToValidate> {
@@ -567,5 +570,29 @@ public class BeanBinderTest
         assertSame(field, errors.get(0).getField());
         assertEquals(message, errors.get(0).getMessage().get());
         assertInvalidField(message, field);
+    }
+    
+    @Test
+    public void change_binding_after_bind_set_required() {
+        Binding<BeanToValidate, String> nameBinding = binder.bind(nameField, "firstname");
+        item.setFirstname("Foo Bar");
+        binder.setBean(item);
+        assertTrue(binder.validate().isOk());
+        
+        item.setFirstname(null);
+        nameBinding.setRequired();
+        
+        assertFalse(binder.validate().isOk());
+    }
+    
+    @Test
+    public void change_binding_after_bind_add_validator() {
+        Binding<BeanToValidate, String> nameBinding = binder.bind(nameField, "firstname");
+        item.setFirstname("Foo Bar");
+        binder.setBean(item);
+        assertTrue(binder.validate().isOk());
+        
+        nameBinding.addValidator(new StringLengthValidator("to long", 0, 3));
+        assertFalse(binder.validate().isOk());
     }
 }
