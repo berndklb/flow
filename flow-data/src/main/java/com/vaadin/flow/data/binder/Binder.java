@@ -932,6 +932,10 @@ public class Binder<BEAN> implements Serializable {
         public BindingBuilder<BEAN, TARGET> asRequired(
                 Validator<TARGET> customRequiredValidator);
         
+        /**
+         * Resets the bound variable to change the existing binding.
+         * @return this binding, for chaining.
+         */
         public BindingBuilder<BEAN, TARGET> unbind();
     }
 
