@@ -42,11 +42,13 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.gentyref.GenericTypeReflector;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.HasText;
 import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.HasValue.ValueChangeEvent;
 import com.vaadin.flow.component.HasValue.ValueChangeListener;
+import com.vaadin.flow.component.HasValueAndElement;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.converter.Converter;
 import com.vaadin.flow.data.converter.StringToIntegerConverter;
@@ -1333,6 +1335,8 @@ public class Binder<BEAN> implements Serializable {
     private BinderValidationStatusHandler<BEAN> statusHandler;
 
     private Set<Binding<BEAN, ?>> changedBindings = new LinkedHashSet<>();
+    
+    private boolean ignoreDisabledFields;
 
     /**
      * Creates a binder using a custom {@link PropertySet} implementation for
@@ -2047,12 +2051,31 @@ public class Binder<BEAN> implements Serializable {
      * @return an immutable list of validation results for bindings
      */
     private List<BindingValidationStatus<?>> validateBindings() {
-        return getBindings().stream().map(BindingImpl::doValidation)
+        return getBindings().stream()
+        		.filter(binding -> filterDisabledFields(binding))
+        		.map(BindingImpl::doValidation)
                 .collect(Collectors.collectingAndThen(Collectors.toList(),
                         Collections::unmodifiableList));
     }
 
-    /**
+    private boolean filterDisabledFields(BindingImpl<BEAN, ?, ?> binding) {
+    	boolean filter = true;
+    	if(ignoreDisabledFields) {
+    		if(binding.field instanceof HasValueAndElement && ((HasValueAndElement<?,?>)binding.field).isReadOnly()) {
+    			 filter = false;
+    		}
+    		if(binding.field instanceof HasEnabled && !((HasEnabled)binding.field).isEnabled()) {
+    			filter = false;
+    		}
+    		if(binding.field instanceof Component && !((Component)binding.field).isVisible()) {
+    			filter = false;
+    		}
+    	}
+    	
+    	return filter;
+	}
+
+	/**
      * Validates the {@code bean} using validators added using
      * {@link #withValidator(Validator)} and returns the result of the
      * validation as a list of validation results.
@@ -2870,5 +2893,9 @@ public class Binder<BEAN> implements Serializable {
         Objects.requireNonNull(propertyName, "Property name may not be null");
         Optional.ofNullable(boundProperties.get(propertyName))
                 .ifPresent(Binding::unbind);
+    }
+    
+    public void setDisabledFieldsIgnore(boolean ignore) {
+    	this.ignoreDisabledFields = ignore;
     }
 }
